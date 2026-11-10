@@ -191,36 +191,90 @@ document.getElementById('saveImport').onclick=()=>{
  persist();document.getElementById('importStatus').textContent=`${added} rekod baharu disimpan. Rekod berulang atau tidak lengkap tidak dimasukkan.`;pending=[];document.getElementById('previewRows').innerHTML='';document.getElementById('saveImport').disabled=true;
 };
 function val(id){return document.getElementById(id).value}
+
+function addressMatchScore(subject, comparable){
+ const a=norm(subject), b=norm(comparable);
+ if(!a||!b)return 0;
+ if(a===b)return 1;
+ const stop=new Set(['no','lot','jalan','jln','lorong','lrg','taman','tmn','kampung','kg','bandar','residensi','residence','the','and']);
+ const tokens=s=>s.split(' ').filter(t=>t.length>1&&!/^\d+[a-z]?$/.test(t)&&!stop.has(t));
+ const at=tokens(a), bt=tokens(b);
+ if(!at.length||!bt.length)return 0;
+ const common=at.filter(t=>bt.includes(t));
+ const overlap=common.length/Math.max(at.length,bt.length);
+ const aTaman=(a.match(/\b(?:taman|tmn)\s+([a-z0-9]+)/)||[])[1];
+ const bTaman=(b.match(/\b(?:taman|tmn)\s+([a-z0-9]+)/)||[])[1];
+ const tamanBonus=aTaman&&bTaman&&aTaman===bTaman?0.55:0;
+ const aRoad=(a.match(/\b(?:jalan|jln|lorong|lrg)\s+([a-z0-9]+)/)||[])[1];
+ const bRoad=(b.match(/\b(?:jalan|jln|lorong|lrg)\s+([a-z0-9]+)/)||[])[1];
+ const roadBonus=aRoad&&bRoad&&aRoad===bRoad?0.25:0;
+ return Math.min(1,overlap*0.55+tamanBonus+roadBonus);
+}
+function percentile(sorted, p){
+ if(!sorted.length)return 0;
+ const pos=(sorted.length-1)*p, lo=Math.floor(pos), hi=Math.ceil(pos);
+ return sorted[lo]+(sorted[hi]-sorted[lo])*(pos-lo);
+}
 document.getElementById('runMV').onclick=()=>{
- const p={address:val('pAddress'),district:val('pDistrict'),category:val('pType'),subtype:val('pSubtype'),tenure:val('pTenure'),land:num(val('pLand')),built:num(val('pBuilt'))};
- if(!p.address||(!p.land&&!p.built)){alert('Masukkan alamat dan sekurang-kurangnya land area atau built-up.');return}
- const targetArea=p.category==='Land'?p.land:(p.built||p.land),basis=p.category==='Land'?'land':'built';
- let candidates=db.map(x=>{
-  const area=basis==='land'?num(x.land):num(x.built);if(!x.price||!area||x.category!==p.category)return null;
-  const a=norm(p.address),b=norm(x.address),tokens=a.split(' ').filter(t=>t.length>2),hits=tokens.filter(t=>b.includes(t)).length;
-  const locScore=tokens.length?hits/tokens.length:0;
-  const district=norm(p.district);const districtHit=district&&b.includes(district)?0.25:0;
-  const ratio=targetArea?Math.min(area,targetArea)/Math.max(area,targetArea):0;
-  const areaScore=ratio;let tenureScore=(!p.tenure||!x.tenure||norm(p.tenure)===norm(x.tenure))?1:0.3;
-  const score=(locScore*.5+districtHit+areaScore*.25)*tenureScore;
-  return {...x,area,psf:x.price/area,score};
- }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,10);
- if(!candidates.length){document.getElementById('matchStatus').textContent='Tiada comparable sesuai. Import data transaksi yang sepadan dan lengkap dahulu.';document.getElementById('results').classList.add('hidden');return}
- const usable=candidates.filter(x=>x.score>=0.12);if(!usable.length){document.getElementById('matchStatus').textContent='Ada rekod dalam database tetapi tiada padanan lokasi/saiz yang cukup relevan untuk anggaran MV.';document.getElementById('results').classList.add('hidden');return}
- const psfs=usable.map(x=>x.psf).sort((a,b)=>a-b);const median=psfs.length%2?psfs[(psfs.length-1)/2]:(psfs[psfs.length/2-1]+psfs[psfs.length/2])/2;
- const low=psfs[Math.floor((psfs.length-1)*.2)],high=psfs[Math.ceil((psfs.length-1)*.8)];
- const fmt=n=>money(Math.round(n*targetArea/1000)*1000);
- document.getElementById('lowVal').textContent=fmt(low);document.getElementById('midVal').textContent=fmt(median);document.getElementById('highVal').textContent=fmt(high);document.getElementById('compCount').textContent=usable.length;
- document.getElementById('basisText').textContent=`Kaedah: median RM/${basis==='land'?'land':'built-up'} sqft daripada comparable yang dipadankan × ${targetArea.toLocaleString()} sqft. Julat low/high menggunakan persentil 20/80. Tiada pelarasan renovasi/lot dibuat secara automatik.`;
- const confidence=usable.length>=5?'Sederhana — sekurang-kurangnya 5 rekod sepadan. Semak keserupaan dan keadaan hartanah.':usable.length>=3?'Terhad — hanya 3–4 rekod sepadan. Gunakan sebagai indikasi awal.':'Rendah — kurang daripada 3 rekod. Anggaran sangat awal dan perlu pengesahan lanjut.';
+ const p={
+  address:val('pAddress'),district:val('pDistrict'),category:val('pType'),
+  subtype:val('pSubtype'),tenure:val('pTenure'),land:num(val('pLand')),
+  built:num(val('pBuilt')),lot:val('pLot'),condition:val('pCondition')
+ };
+ if(!p.address||!p.land){alert('Untuk Residential, masukkan alamat dan Land Area (sqft). Land Area ialah asas utama pengiraan MV.');return}
+ if(p.category!=='Residential'){
+  document.getElementById('matchStatus').textContent='Formula Land Area sebagai asas utama ini ditetapkan untuk kategori Residential. Kategori lain memerlukan formula khusus.';
+  document.getElementById('results').classList.add('hidden');return;
+ }
+ const qualified=db.map(x=>{
+  if(x.category!=='Residential'||!x.price||!num(x.land))return null;
+  const loc=addressMatchScore(p.address,x.address);
+  const ratio=num(x.land)/p.land;
+  const areaRatio=Math.min(ratio,1/ratio);
+  const areaScore=areaRatio>=0.75?1:areaRatio>=0.65?0.75:areaRatio>=0.55?0.45:0;
+  if(loc<0.28||areaRatio<0.55)return null;
+  const tenureSame=!p.tenure||!x.tenure||norm(p.tenure)===norm(x.tenure);
+  const tenureScore=tenureSame?1:0.75;
+  const dateMatch=String(x.date||'').match(/(\d{2})[-/](\d{2})[-/](\d{4})|(\d{4})[-/](\d{2})[-/](\d{2})/);
+  let ageScore=0.75;
+  if(dateMatch){
+   const year=Number(dateMatch[3]||dateMatch[4]);
+   const month=Number(dateMatch[2]||dateMatch[5])-1;
+   const day=Number(dateMatch[1]||dateMatch[6]);
+   const ageMonths=Math.max(0,(new Date().getFullYear()-year)*12+(new Date().getMonth()-month));
+   ageScore=ageMonths<=24?1:ageMonths<=48?0.9:ageMonths<=72?0.8:0.65;
+  }
+  const score=(loc*0.50+areaScore*0.35+ageScore*0.10+tenureScore*0.05);
+  return {...x,landPSF:num(x.price)/num(x.land),score,locScore:loc,areaRatio,tenureSame};
+ }).filter(Boolean).sort((a,b)=>b.score-a.score);
+
+ const usable=qualified.filter(x=>x.score>=0.55).slice(0,10);
+ const status=document.getElementById('matchStatus');
+ if(usable.length<5){
+  document.getElementById('results').classList.add('hidden');
+  status.textContent=`DATA INSUFFICIENT: Hanya ${usable.length} comparable berkualiti ditemui. Minimum 5 diperlukan untuk mengeluarkan anggaran MV Residential. Semak alamat, land area atau import lebih banyak transaksi yang sepadan.`;
+  return;
+ }
+ const psfs=usable.map(x=>x.landPSF).sort((a,b)=>a-b);
+ const lowPSF=percentile(psfs,0.20),midPSF=percentile(psfs,0.50),highPSF=percentile(psfs,0.80);
+ const low=lowPSF*p.land,mid=midPSF*p.land,high=highPSF*p.land;
+ const fmt=n=>money(Math.round(n/1000)*1000);
+ document.getElementById('lowVal').textContent=fmt(low);
+ document.getElementById('midVal').textContent=fmt(mid);
+ document.getElementById('highVal').textContent=fmt(high);
+ document.getElementById('compCount').textContent=usable.length;
+ document.getElementById('basisText').textContent=
+  `RESIDENTIAL — Land Area sebagai asas utama. Formula: harga transaksi ÷ land area = RM/land sqft. MV = persentil RM/PSF comparable × ${p.land.toLocaleString()} sqft. Low P20: ${money(lowPSF)}/sqft; Median: ${money(midPSF)}/sqft; High P80: ${money(highPSF)}/sqft. Built-up dan lot status bukan asas utama formula ini.`;
+ const confidence=usable.length>=8?'Baik dari segi bilangan sampel — sekurang-kurangnya 8 comparable berkualiti. Semak keserupaan fizikal dan bukti transaksi.':'Sederhana — sekurang-kurangnya 5 comparable berkualiti ditemui. Semak keserupaan dan kesahihan rekod.';
  document.getElementById('confidence').textContent='CONFIDENCE: '+confidence;
- document.getElementById('matchedRows').innerHTML=usable.map(x=>`<tr><td>${esc(x.address)}</td><td>${esc(x.date)}</td><td>${money(x.price)}</td><td>${x.land||'—'}</td><td>${x.built||'—'}</td><td>${money(x.psf)}</td><td>${(x.score*100).toFixed(0)}%</td></tr>`).join('');
- document.getElementById('results').classList.remove('hidden');document.getElementById('matchStatus').textContent=`${usable.length} comparable dipadankan daripada ${db.length} rekod dalam database.`;
- window.lastReport={p,usable,low:low*targetArea,mid:median*targetArea,high:high*targetArea,basis,confidence};
+ document.getElementById('matchedRows').innerHTML=usable.map(x=>`<tr><td>${esc(x.address)}</td><td>${esc(x.date)}</td><td>${money(x.price)}</td><td>${x.land||'—'}</td><td>${x.built||'—'}</td><td>${money(x.landPSF)}</td><td>${(x.score*100).toFixed(0)}%</td></tr>`).join('');
+ document.getElementById('results').classList.remove('hidden');
+ status.textContent=`${usable.length} comparable Residential berkualiti dipadankan daripada ${db.length} rekod. Pengiraan menggunakan Land Area.`;
+ window.lastReport={p,usable,low,mid,high,basis:'land',confidence,lowPSF,midPSF,highPSF};
 };
-document.getElementById('clearProperty').onclick=()=>{document.querySelectorAll('#valuation input').forEach(x=>x.value='');document.getElementById('results').classList.add('hidden')};
+document.getElementById('clearProperty').onclick=()=>{document.querySelectorAll('#valuation input').forEach(x=>x.value='');document.querySelectorAll('#valuation select').forEach(x=>x.selectedIndex=0);document.getElementById('results').classList.add('hidden')};
 document.getElementById('printReport').onclick=()=>window.print();
-document.getElementById('copySummary').onclick=()=>{if(!window.lastReport)return;let r=window.lastReport,s=`MPIRE MARKET VALUE CHECKER\nProperty: ${r.p.address}\nCategory: ${r.p.category}\nProperty type: ${r.p.subtype||"Not specified"}\nCondition: ${val("pCondition")||"Not specified"}\nIndicative Low MV: ${money(r.low)}\nIndicative Mid MV: ${money(r.mid)}\nIndicative High MV: ${money(r.high)}\nComparable count: ${r.usable.length}\nBasis: ${r.basis} sqft\nConfidence: ${r.confidence}\nNote: Indicative analysis based on uploaded records; not a formal valuation.`;navigator.clipboard.writeText(s).then(()=>alert('MV summary copied.')).catch(()=>alert(s))};
+document.getElementById('copySummary').onclick=()=>{if(!window.lastReport)return;let r=window.lastReport,s=`MPIRE MARKET VALUE CHECKER\nProperty: ${r.p.address}\nCategory: ${r.p.category}\nProperty type: ${r.p.subtype||"Not specified"}\nCondition: ${val("pCondition")||"Not specified"}\nIndicative Low MV: ${money(r.low)}\nIndicative Mid MV: ${money(r.mid)}\nIndicative High MV: ${money(r.high)}\nComparable count: ${r.usable.length}\nLand area subject: ${r.p.land.toLocaleString()} sqft\nRM/land sqft — Low: ${money(r.lowPSF)}; Median: ${money(r.midPSF)}; High: ${money(r.highPSF)}\nBasis: Land Area (Residential)\nConfidence: ${r.confidence}\nNote: Indicative analysis based on uploaded records; not a formal valuation.`;navigator.clipboard.writeText(s).then(()=>alert('MV summary copied.')).catch(()=>alert(s))};
 function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
 document.getElementById('exportJson').onclick=()=>download('mpire-mv-database.json',JSON.stringify(db,null,2),'application/json');
 document.getElementById('exportCsv').onclick=()=>{let keys=['date','address','category','price','land','built','tenure','source','sourceType'];let csv=[keys.join(','),...db.map(x=>keys.map(k=>'"'+String(x[k]??'').replace(/"/g,'""')+'"').join(','))].join('\n');download('mpire-mv-database.csv',csv,'text/csv')};
