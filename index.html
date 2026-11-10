@@ -87,18 +87,25 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
 function classify(s){s=String(s||'').toLowerCase();if(/industrial|kilang|factory|warehouse|gudang/.test(s))return 'Industrial';if(/commercial|shop|kedai|office|retail/.test(s))return 'Commercial';if(/land|tanah|agriculture|agricultur/.test(s))return 'Land';return 'Residential'}
 function parseCSV(t){const lines=t.replace(/\r/g,'').split('\n').filter(x=>x.trim());const delim=lines[0].includes(';')?';':',';const parseLine=l=>{let a=[],v='',q=false;for(let i=0;i<l.length;i++){let c=l[i];if(c==='"'){if(q&&l[i+1]==='"'){v+='"';i++}else q=!q}else if(c===delim&&!q){a.push(v.trim());v=''}else v+=c}a.push(v.trim());return a};const heads=parseLine(lines.shift()).map(norm);return lines.map(l=>{let a=parseLine(l),o={};heads.forEach((h,i)=>o[h]=a[i]||'');return {date:o.date||o.tarikh||'',address:o.address||o.alamat||o.location||'',category:classify(o.category||o.type||o.kategori||''),price:num(o.price||o.harga||o['transaction price']),land:num(o.land||o['land area']||o['land sqft']||o['keluasan tanah']),built:num(o.built||o['built up']||o['built up sqft']||o['keluasan binaan']),tenure:o.tenure||o['pegangan']||'',source:o.source||'User uploaded Sales Search',sourceType:'transaction'}}).filter(x=>x.address&&x.price)}
 function parseTextPDF(t){
- // Fallback parser for flattened text; retained for PDFs whose text layer has no usable coordinates.
- const s=String(t||'').replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ');
- const starts=[...s.matchAll(/(?:^|\n)\s*(\d{1,4})\s+(\d{2}[-/]\d{2}[-/]\d{4})\s+/g)];
- let out=[];
- for(let i=0;i<starts.length;i++){
-  const a=starts[i].index+(starts[i][0].startsWith('\n')?1:0),b=i+1<starts.length?starts[i+1].index:s.length;
-  const chunk=s.slice(a,b).replace(/\s+/g,' ').trim(),date=starts[i][2],after=chunk.slice(chunk.indexOf(date)+date.length);
-  const nums=[...after.matchAll(/RM\s*([\d,]+(?:\.\d+)?)/gi)].map(m=>num(m[1])).filter(n=>n>1000);
-  const addr=after.split(/\b(?:Negeri Kedah|Daerah Kulim|Mukim|GERAN|HS\(D\)|HS\(M\)|PAJAKAN)\b/i)[0].replace(/\bNAPIC\b.*$/i,'').trim();
-  out.push({date,address:addr,category:classify(addr),price:nums[0]||0,land:0,built:0,tenure:/leasehold/i.test(after)?'Leasehold':/freehold/i.test(after)?'Freehold':'',source:'As labelled in uploaded PDF',sourceType:'transaction',review:true});
+ // Homefield Sales Search PDF text is emitted in transaction blocks, not normal table rows.
+ // Parse by each date anchor, independent of PDF page rotation and text coordinates.
+ const s=String(t||'').replace(/\u00a0/g,' ').replace(/([\d,]+)\.\s+(\d{1,2})(?=\s|sf|\/|$)/g,'$1.$2').replace(/\s+/g,' ').trim();
+ const dates=[...s.matchAll(/(?<!\d)(\d{2}[-/]\d{2}[-/]\d{4})(?!\d)/g)];
+ const out=[];
+ for(let i=0;i<dates.length;i++){
+  const m=dates[i], chunk=s.slice(m.index, i+1<dates.length?dates[i+1].index:s.length);
+  const afterDate=chunk.slice(m[0].length).trim();
+  const address=(afterDate.split(/\bNegeri\b/i)[0]||'').replace(/\s+/g,' ').trim();
+  const priceMatch=chunk.match(/\bRM\s*([\d,]+(?:\.\d+)?)/i);
+  const price=priceMatch?num(priceMatch[1]):0;
+  const areas=[...chunk.matchAll(/([\d,]+(?:\.\d+)?)\s*sf\./gi)].map(x=>num(x[1])).filter(x=>x>100);
+  const tenure=/freehol\s*d/i.test(chunk)?'Freehold':/leasehol\s*d/i.test(chunk)?'Leasehold':'';
+  let category=classify(address+' '+chunk);
+  // A record with only a land-area figure and a land/lot-style address is treated as land.
+  if(!areas[1] && /^(LOT|PT\s|PLOT)/i.test(address)) category='Land';
+  out.push({date:m[1],address,category,price,land:areas[0]||0,built:areas[1]||0,tenure,source:'As labelled in uploaded Homefield Sales Search PDF',sourceType:'transaction',review:true});
  }
- return out.filter(x=>x.address&&x.price);
+ return out.filter(x=>x.address&&x.price>0);
 }
 function parseSalesSearchItems(items){
  // Homefield Sales Search PDF is rotated: each transaction occupies a vertical strip.
@@ -135,8 +142,8 @@ document.getElementById('fileInput').onchange=async e=>{
    if(!window.pdfjsLib)throw Error('PDF reader gagal dimuat. Cuba CSV atau Excel yang dieksport sebagai CSV.');
    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
    const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;pending=[];let allItems=[];
-   for(let p=1;p<=pdf.numPages;p++){let page=await pdf.getPage(p),c=await page.getTextContent();allItems.push(...c.items);pending.push(...parseSalesSearchItems(c.items))}
-   if(!pending.length){let all=allItems.map(x=>x.str).join(' ');pending=parseTextPDF(all)}
+   for(let p=1;p<=pdf.numPages;p++){let page=await pdf.getPage(p),c=await page.getTextContent();allItems.push(...c.items);pending.push(...parseTextPDF(c.items.map(x=>x.str).join(' ')))}
+   // Do not fall back to coordinate heuristics: rotated PDF pages use inconsistent viewport coordinates.
   } else throw Error('Format fail tidak disokong.');
   showPreview();document.getElementById('saveImport').disabled=!pending.length;document.getElementById('importStatus').textContent=`${pending.length} rekod dikesan daripada ${f.name}. Sila semak semua medan sebelum simpan.`;
  }catch(err){document.getElementById('importStatus').textContent='Ralat: '+err.message}
