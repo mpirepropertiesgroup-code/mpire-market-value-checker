@@ -32,7 +32,9 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <div class="field"><label>Alamat / Location</label><input id="pAddress" placeholder="Contoh: Taman Kulim Technocity, Kulim"></div>
 <div class="field"><label>Daerah / District</label><input id="pDistrict" placeholder="Contoh: Kulim"></div>
 <div class="field"><label>Kategori hartanah</label><select id="pType"><option value="Residential">Residential</option><option value="Commercial">Commercial</option><option value="Industrial">Industrial</option><option value="Land">Land</option></select></div>
-<div class="field"><label>Jenis / Property type</label><input id="pSubtype" placeholder="Teres 2 tingkat / shoplot / factory"></div>
+<div class="field"><label>Jenis / Property type</label><select id="pSubtype">
+<option value="">Pilih jenis hartanah</option>
+</select></div>
 <div class="field"><label>Tenure</label><select id="pTenure"><option value="">Tidak dinyatakan</option><option>Freehold</option><option>Leasehold</option><option>Malay Reserve</option></select></div>
 <div class="field"><label>Land area (sqft)</label><input id="pLand" type="number" min="0" placeholder="Contoh: 1400"></div>
 <div class="field"><label>Built-up (sqft)</label><input id="pBuilt" type="number" min="0" placeholder="Contoh: 1600"></div>
@@ -40,7 +42,21 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <div class="field"><label>Lot status</label><input id="pLot" placeholder="Lot tengah / corner / end lot"></div>
 <div class="field"><label>Bilik</label><input id="pBeds" type="number" min="0"></div>
 <div class="field"><label>Bilik air</label><input id="pBaths" type="number" min="0"></div>
-<div class="field"><label>Condition / Renovation</label><input id="pCondition" placeholder="Basic / renovated / original"></div>
+<div class="field"><label>Condition / Renovation</label><select id="pCondition">
+<option value="">Pilih keadaan hartanah</option>
+<option>Original / As-is</option>
+<option>Basic condition</option>
+<option>Good condition</option>
+<option>Well maintained</option>
+<option>Partially renovated</option>
+<option>Fully renovated</option>
+<option>Newly renovated</option>
+<option>Under renovation</option>
+<option>Needs repair</option>
+<option>Poor condition</option>
+<option>Shell & core</option>
+<option>Others / Not specified</option>
+</select></div>
 </div>
 <div class="actions no-print"><button id="runMV">MATCH COMPARABLE & ESTIMATE MV</button><button class="secondary" id="clearProperty">Clear</button></div>
 <p class="status" id="matchStatus">Masukkan maklumat hartanah dan klik butang untuk memadankan transaksi yang telah diimport.</p>
@@ -69,6 +85,23 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const KEY='mpire_mv_transactions_v1'; let db=loadDB(), pending=[];
+
+const PROPERTY_TYPES={
+ Residential:['Terrace House - 1 Storey','Terrace House - 2 Storey','Terrace House - 3 Storey','Semi-Detached House','Detached / Bungalow','Townhouse','Cluster House','Flat','Apartment','Condominium','Serviced Residence','Low Cost House','Others'],
+ Commercial:['Shoplot - 1 Storey','Shoplot - 2 Storey','Shoplot - 3 Storey','Office Unit','Shop Office','Retail Lot','Commercial Building','Showroom','Hotel','Others'],
+ Industrial:['Detached Factory','Semi-Detached Factory','Terrace Factory','Light Industrial','Medium Industrial','Heavy Industrial','Warehouse','Industrial Land','Others'],
+ Land:['Residential Land','Commercial Land','Industrial Land','Agricultural Land','Development Land','Vacant Land','Others']
+};
+function refreshPropertyTypes(keepValue=true){
+ const category=document.getElementById('pType').value;
+ const select=document.getElementById('pSubtype');
+ const previous=keepValue?select.value:'';
+ select.innerHTML='<option value="">Pilih jenis hartanah</option>'+PROPERTY_TYPES[category].map(v=>`<option value="${v}">${v}</option>`).join('');
+ if(previous && [...select.options].some(o=>o.value===previous)) select.value=previous;
+}
+document.getElementById('pType').addEventListener('change',()=>refreshPropertyTypes(false));
+refreshPropertyTypes();
+
 function loadDB(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(db));renderDB()}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -196,7 +229,7 @@ document.getElementById('runMV').onclick=()=>{
 };
 document.getElementById('clearProperty').onclick=()=>{document.querySelectorAll('#valuation input').forEach(x=>x.value='');document.getElementById('results').classList.add('hidden')};
 document.getElementById('printReport').onclick=()=>window.print();
-document.getElementById('copySummary').onclick=()=>{if(!window.lastReport)return;let r=window.lastReport,s=`MPIRE MARKET VALUE CHECKER\nProperty: ${r.p.address}\nCategory: ${r.p.category}\nIndicative Low MV: ${money(r.low)}\nIndicative Mid MV: ${money(r.mid)}\nIndicative High MV: ${money(r.high)}\nComparable count: ${r.usable.length}\nBasis: ${r.basis} sqft\nConfidence: ${r.confidence}\nNote: Indicative analysis based on uploaded records; not a formal valuation.`;navigator.clipboard.writeText(s).then(()=>alert('MV summary copied.')).catch(()=>alert(s))};
+document.getElementById('copySummary').onclick=()=>{if(!window.lastReport)return;let r=window.lastReport,s=`MPIRE MARKET VALUE CHECKER\nProperty: ${r.p.address}\nCategory: ${r.p.category}\nProperty type: ${r.p.subtype||"Not specified"}\nCondition: ${val("pCondition")||"Not specified"}\nIndicative Low MV: ${money(r.low)}\nIndicative Mid MV: ${money(r.mid)}\nIndicative High MV: ${money(r.high)}\nComparable count: ${r.usable.length}\nBasis: ${r.basis} sqft\nConfidence: ${r.confidence}\nNote: Indicative analysis based on uploaded records; not a formal valuation.`;navigator.clipboard.writeText(s).then(()=>alert('MV summary copied.')).catch(()=>alert(s))};
 function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
 document.getElementById('exportJson').onclick=()=>download('mpire-mv-database.json',JSON.stringify(db,null,2),'application/json');
 document.getElementById('exportCsv').onclick=()=>{let keys=['date','address','category','price','land','built','tenure','source','sourceType'];let csv=[keys.join(','),...db.map(x=>keys.map(k=>'"'+String(x[k]??'').replace(/"/g,'""')+'"').join(','))].join('\n');download('mpire-mv-database.csv',csv,'text/csv')};
