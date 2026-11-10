@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MPIRE MARKET VALUE CHECKER</title>
+<style>
+:root{--bg:#0b0d11;--panel:#141820;--panel2:#1b212c;--line:#2a3240;--red:#d62836;--silver:#c5cbd4;--muted:#929baa;--green:#35c58b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f4f6f9;font:14px/1.5 Inter,Arial,sans-serif}
+header{padding:22px clamp(16px,4vw,44px);background:linear-gradient(120deg,#08090c,#191e27);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:13px}.mark{width:48px;height:48px;border:2px solid var(--red);border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:18px;box-shadow:inset 0 0 0 3px #252b35}.brand h1{font-size:18px;letter-spacing:1.2px;margin:0}.brand small{color:var(--silver);letter-spacing:2px}
+.pill{border:1px solid #384354;color:#d9dee6;padding:6px 10px;border-radius:20px;font-size:11px}
+main{max-width:1250px;margin:26px auto;padding:0 18px 60px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}.tab{background:var(--panel);border:1px solid var(--line);color:#cbd2dc;padding:10px 14px;border-radius:9px;cursor:pointer}.tab.active{background:#32171c;border-color:var(--red);color:#fff}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}.panel h2{font-size:17px;margin:0 0 15px}.sub{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:5px}.field label{color:#c7ced8;font-size:12px}.field input,.field select,.field textarea{width:100%;background:#0d1118;border:1px solid #354052;color:#f5f7fa;border-radius:8px;padding:10px;font:inherit;min-width:0}.field textarea{min-height:72px;resize:vertical}
+button{border:0;border-radius:8px;padding:10px 14px;background:var(--red);color:#fff;font-weight:700;cursor:pointer}button.secondary{background:#293241;border:1px solid #414c5e}button.danger{background:#57232a}button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}.metric small{color:var(--muted);display:block}.metric strong{font-size:20px;display:block;margin-top:5px}.metric.mid{border-color:#3c936f}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}th{color:#bfc7d2;background:#1b212c;position:sticky;top:0}td input,td select{width:100%;min-width:85px;background:#0d1118;border:1px solid #354052;color:#fff;padding:6px;border-radius:5px}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:9px}
+.notice{background:#211d14;border:1px solid #65512b;color:#f1d9a7;padding:12px;border-radius:9px;margin:12px 0;font-size:12px}.good{color:var(--green)}.hidden{display:none!important}.status{font-size:12px;color:var(--muted);margin-top:8px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.panel{padding:14px}.metric strong{font-size:16px}}
+@media print{body{background:#fff;color:#111}header,.tabs,.no-print{display:none!important}main{margin:0;max-width:none}.panel,.metric{background:#fff;color:#111;border:1px solid #bbb;break-inside:avoid}th{background:#eee;color:#111}td,th{border-color:#ccc}.sub,.metric small{color:#444}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="mark">MP</div><div><h1>MPIRE MARKET VALUE CHECKER</h1><small>MPIRE PROPERTIES · TRUST · VALUE · RESULTS</small></div></div><span class="pill">GITHUB PAGES · LOCAL DATABASE</span></header>
+<main>
+<div class="tabs no-print"><button class="tab active" data-tab="valuation">MV CHECKER</button><button class="tab" data-tab="import">IMPORT SALES SEARCH</button><button class="tab" data-tab="database">TRANSACTION DATABASE</button></div>
+
+<section id="valuation">
+<div class="panel">
+<h2>1. Property Details</h2>
+<div class="grid">
+<div class="field"><label>Alamat / Location</label><input id="pAddress" placeholder="Contoh: Taman Kulim Technocity, Kulim"></div>
+<div class="field"><label>Daerah / District</label><input id="pDistrict" placeholder="Contoh: Kulim"></div>
+<div class="field"><label>Kategori hartanah</label><select id="pType"><option value="Residential">Residential</option><option value="Commercial">Commercial</option><option value="Industrial">Industrial</option><option value="Land">Land</option></select></div>
+<div class="field"><label>Jenis / Property type</label><input id="pSubtype" placeholder="Teres 2 tingkat / shoplot / factory"></div>
+<div class="field"><label>Tenure</label><select id="pTenure"><option value="">Tidak dinyatakan</option><option>Freehold</option><option>Leasehold</option><option>Malay Reserve</option></select></div>
+<div class="field"><label>Land area (sqft)</label><input id="pLand" type="number" min="0" placeholder="Contoh: 1400"></div>
+<div class="field"><label>Built-up (sqft)</label><input id="pBuilt" type="number" min="0" placeholder="Contoh: 1600"></div>
+<div class="field"><label>Asking price (RM)</label><input id="pAsk" type="number" min="0" placeholder="Contoh: 450000"></div>
+<div class="field"><label>Lot status</label><input id="pLot" placeholder="Lot tengah / corner / end lot"></div>
+<div class="field"><label>Bilik</label><input id="pBeds" type="number" min="0"></div>
+<div class="field"><label>Bilik air</label><input id="pBaths" type="number" min="0"></div>
+<div class="field"><label>Condition / Renovation</label><input id="pCondition" placeholder="Basic / renovated / original"></div>
+</div>
+<div class="actions no-print"><button id="runMV">MATCH COMPARABLE & ESTIMATE MV</button><button class="secondary" id="clearProperty">Clear</button></div>
+<p class="status" id="matchStatus">Masukkan maklumat hartanah dan klik butang untuk memadankan transaksi yang telah diimport.</p>
+</div>
+<div id="results" class="hidden">
+<div class="panel"><h2>2. Indicative Market Value</h2><div class="metrics">
+<div class="metric"><small>LOW ESTIMATE</small><strong id="lowVal">—</strong></div><div class="metric mid"><small>MID ESTIMATE</small><strong id="midVal">—</strong></div><div class="metric"><small>HIGH ESTIMATE</small><strong id="highVal">—</strong></div><div class="metric"><small>COMPARABLE COUNT</small><strong id="compCount">—</strong></div>
+</div><p class="status" id="basisText"></p><div class="notice" id="confidence"></div><h2>Matched Comparable Records</h2><div class="tablewrap"><table><thead><tr><th>Address</th><th>Date</th><th>Price</th><th>Land sqft</th><th>Built sqft</th><th>RM/PSF</th><th>Score</th></tr></thead><tbody id="matchedRows"></tbody></table></div><div class="actions no-print"><button class="secondary" id="printReport">PRINT / SAVE PDF</button><button class="secondary" id="copySummary">COPY MV SUMMARY</button></div></div>
+</div>
+</section>
+
+<section id="import" class="hidden">
+<div class="panel"><h2>Import Sales Search Homefield</h2><p class="sub">Upload PDF, CSV atau JSON. Rekod yang diekstrak daripada PDF akan dipaparkan untuk semakan sebelum disimpan. Data disimpan dalam browser/peranti ini sahaja.</p>
+<div class="field"><label>Pilih fail Sales Search</label><input type="file" id="fileInput" accept=".pdf,.csv,.txt,.json"></div>
+<div class="notice">PDF extraction menggunakan text layer. Jika PDF ialah scan/gambar atau format jadual berubah, sesetengah medan mungkin tidak dapat dibaca dengan tepat. Semak dan betulkan rekod sebelum tekan “Save imported records”. Tiada data akan dianggap sah secara automatik hanya kerana berjaya diekstrak.</div>
+<div class="actions"><button id="saveImport" disabled>SAVE IMPORTED RECORDS</button><button class="secondary" id="downloadTemplate">Download CSV Template</button></div><p class="status" id="importStatus">Belum ada fail dipilih.</p>
+<div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>No.</th><th>Date</th><th>Address</th><th>Category</th><th>Price RM</th><th>Land sqft</th><th>Built sqft</th><th>Tenure</th><th>Source</th><th></th></tr></thead><tbody id="previewRows"></tbody></table></div>
+</div></section>
+
+<section id="database" class="hidden">
+<div class="panel"><h2>Comparable Database</h2><div class="metrics"><div class="metric"><small>TOTAL RECORDS</small><strong id="dbCount">0</strong></div><div class="metric"><small>RESIDENTIAL</small><strong id="dbRes">0</strong></div><div class="metric"><small>COMMERCIAL</small><strong id="dbCom">0</strong></div><div class="metric"><small>INDUSTRIAL + LAND</small><strong id="dbOther">0</strong></div></div>
+<div class="actions no-print"><button class="secondary" id="exportJson">EXPORT DATABASE JSON</button><button class="secondary" id="exportCsv">EXPORT DATABASE CSV</button><button class="danger" id="clearDb">DELETE ALL DATABASE</button></div><div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Date</th><th>Address</th><th>Category</th><th>Price RM</th><th>Land sqft</th><th>Built sqft</th><th>Tenure</th><th>Source</th><th></th></tr></thead><tbody id="dbRows"></tbody></table></div></div>
+</section>
+<p class="sub">Nota: Anggaran ini ialah alat analisis perbandingan berdasarkan rekod yang pengguna muat naik, bukan valuation rasmi atau penilaian berdaftar. Ketepatan bergantung pada kelengkapan, keserupaan dan kesahihan data comparable.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+const KEY='mpire_mv_transactions_v1'; let db=loadDB(), pending=[];
+function loadDB(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));renderDB()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){return n? 'RM '+Number(n).toLocaleString('en-MY',{maximumFractionDigits:0}):'—'}
+function num(v){if(v===null||v===undefined)return 0;return Number(String(v).replace(/[^\d.]/g,''))||0}
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
+function renderDB(){
+ document.getElementById('dbCount').textContent=db.length;
+ document.getElementById('dbRes').textContent=db.filter(x=>x.category==='Residential').length;
+ document.getElementById('dbCom').textContent=db.filter(x=>x.category==='Commercial').length;
+ document.getElementById('dbOther').textContent=db.filter(x=>['Industrial','Land'].includes(x.category)).length;
+ document.getElementById('dbRows').innerHTML=db.map((x,i)=>`<tr><td>${esc(x.date)}</td><td>${esc(x.address)}</td><td>${esc(x.category)}</td><td>${money(x.price)}</td><td>${x.land||'—'}</td><td>${x.built||'—'}</td><td>${esc(x.tenure)}</td><td>${esc(x.source)}</td><td><button class="danger" onclick="removeRecord(${i})">Delete</button></td></tr>`).join('');
+}
+window.removeRecord=i=>{if(confirm('Padam rekod ini?')){db.splice(i,1);persist()}};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['valuation','import','database'].forEach(id=>document.getElementById(id).classList.toggle('hidden',id!==b.dataset.tab));});
+function classify(s){s=String(s||'').toLowerCase();if(/industrial|kilang|factory|warehouse|gudang/.test(s))return 'Industrial';if(/commercial|shop|kedai|office|retail/.test(s))return 'Commercial';if(/land|tanah|agriculture|agricultur/.test(s))return 'Land';return 'Residential'}
+function parseCSV(t){const lines=t.replace(/\r/g,'').split('\n').filter(x=>x.trim());const delim=lines[0].includes(';')?';':',';const parseLine=l=>{let a=[],v='',q=false;for(let i=0;i<l.length;i++){let c=l[i];if(c==='"'){if(q&&l[i+1]==='"'){v+='"';i++}else q=!q}else if(c===delim&&!q){a.push(v.trim());v=''}else v+=c}a.push(v.trim());return a};const heads=parseLine(lines.shift()).map(norm);return lines.map(l=>{let a=parseLine(l),o={};heads.forEach((h,i)=>o[h]=a[i]||'');return {date:o.date||o.tarikh||'',address:o.address||o.alamat||o.location||'',category:classify(o.category||o.type||o.kategori||''),price:num(o.price||o.harga||o['transaction price']),land:num(o.land||o['land area']||o['land sqft']||o['keluasan tanah']),built:num(o.built||o['built up']||o['built up sqft']||o['keluasan binaan']),tenure:o.tenure||o['pegangan']||'',source:o.source||'User uploaded Sales Search',sourceType:'transaction'}}).filter(x=>x.address&&x.price)}
+function parseTextPDF(t){
+ // Heuristic parser for text-based Sales Search PDFs; imported records are editable before saving.
+ const s=t.replace(/\u00a0/g,' ').replace(/[ \t]+/g,' ');
+ const starts=[...s.matchAll(/(?:^|\n)\s*(\d{1,4})\s+(\d{2}[-/]\d{2}[-/]\d{4})\s+/g)];
+ let out=[];
+ for(let i=0;i<starts.length;i++){
+  let a=starts[i].index+(starts[i][0].startsWith('\n')?1:0), b=i+1<starts.length?starts[i+1].index:s.length, chunk=s.slice(a,b).replace(/\s+/g,' ').trim();
+  const date=starts[i][2], after=chunk.slice(chunk.indexOf(date)+date.length);
+  const priceMatches=[...after.matchAll(/RM\s*([\d,]+(?:\.\d+)?)/gi)].map(m=>num(m[1])).filter(n=>n>1000);
+  const sqftMatches=[...after.matchAll(/([\d,]+(?:\.\d+)?)\s*sf\b/gi)].map(m=>num(m[1])).filter(n=>n>100);
+  let address=after.split(/\b(?:Negeri Kedah|Daerah Kulim|Mukim|GERAN|HS\(D\)|HS\(M\)|PAJAKAN)\b/i)[0].replace(/\bNAPIC\b.*$/i,'').trim();
+  address=address.replace(/\b(?:Freehold|Leasehold)\b.*$/i,'').replace(/^(?:GIS\s+\d+\s+)?/,'').trim();
+  let tenure=/leasehold/i.test(after)?'Leasehold':/freehold/i.test(after)?'Freehold':'';
+  let price=priceMatches.length?priceMatches[0]:0;
+  // Most rows list land area first and built-up second; absent values remain blank.
+  out.push({date,address:address||'REVIEW ADDRESS',category:classify(address),price,land:sqftMatches[0]||0,built:sqftMatches[1]||0,tenure,source:'NAPIC (as labelled in uploaded PDF)',sourceType:'transaction',review:true});
+ }
+ return out.filter(x=>x.price||x.address!=='REVIEW ADDRESS');
+}
+document.getElementById('fileInput').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;pending=[];document.getElementById('saveImport').disabled=true;
+ try{
+  if(f.name.toLowerCase().endsWith('.csv')||f.name.toLowerCase().endsWith('.txt'))pending=parseCSV(await f.text());
+  else if(f.name.toLowerCase().endsWith('.json')){let j=JSON.parse(await f.text());pending=(Array.isArray(j)?j:j.records||[]).map(x=>({...x,category:x.category||classify(x.type),price:num(x.price),land:num(x.land),built:num(x.built),source:x.source||'Imported JSON',sourceType:x.sourceType||'transaction'}))}
+  else if(f.name.toLowerCase().endsWith('.pdf')){
+   if(!window.pdfjsLib)throw Error('PDF reader gagal dimuat. Cuba CSV atau Excel yang dieksport sebagai CSV.');
+   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+   const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let all='';
+   for(let p=1;p<=pdf.numPages;p++){let page=await pdf.getPage(p),c=await page.getTextContent();all+='\n'+c.items.map(x=>x.str).join(' ')+'\n'}
+   pending=parseTextPDF(all);
+  } else throw Error('Format fail tidak disokong.');
+  showPreview();document.getElementById('saveImport').disabled=!pending.length;document.getElementById('importStatus').textContent=`${pending.length} rekod dikesan daripada ${f.name}. Sila semak semua medan sebelum simpan.`;
+ }catch(err){document.getElementById('importStatus').textContent='Ralat: '+err.message}
+};
+function showPreview(){document.getElementById('previewRows').innerHTML=pending.map((x,i)=>`<tr>
+<td>${i+1}</td><td><input data-i="${i}" data-k="date" value="${esc(x.date)}"></td><td><input style="min-width:220px" data-i="${i}" data-k="address" value="${esc(x.address)}"></td>
+<td><select data-i="${i}" data-k="category">${['Residential','Commercial','Industrial','Land'].map(v=>`<option ${x.category===v?'selected':''}>${v}</option>`).join('')}</select></td>
+<td><input type="number" data-i="${i}" data-k="price" value="${x.price||''}"></td><td><input type="number" data-i="${i}" data-k="land" value="${x.land||''}"></td><td><input type="number" data-i="${i}" data-k="built" value="${x.built||''}"></td><td><input data-i="${i}" data-k="tenure" value="${esc(x.tenure)}"></td><td>${esc(x.source)}</td><td>${x.review?'Review':''}</td></tr>`).join('');
+ document.querySelectorAll('#previewRows [data-i]').forEach(el=>el.onchange=()=>{let x=pending[+el.dataset.i];x[el.dataset.k]=['price','land','built'].includes(el.dataset.k)?num(el.value):el.value});
+}
+document.getElementById('saveImport').onclick=()=>{
+ let added=0;pending.forEach(x=>{if(!x.address||!x.price)return;let key=[norm(x.address),x.date,num(x.price)].join('|');if(!db.some(y=>y.key===key)){db.push({...x,key,importedAt:new Date().toISOString()});added++}});
+ persist();document.getElementById('importStatus').textContent=`${added} rekod baharu disimpan. Rekod berulang atau tidak lengkap tidak dimasukkan.`;pending=[];document.getElementById('previewRows').innerHTML='';document.getElementById('saveImport').disabled=true;
+};
+function val(id){return document.getElementById(id).value}
+document.getElementById('runMV').onclick=()=>{
+ const p={address:val('pAddress'),district:val('pDistrict'),category:val('pType'),subtype:val('pSubtype'),tenure:val('pTenure'),land:num(val('pLand')),built:num(val('pBuilt'))};
+ if(!p.address||(!p.land&&!p.built)){alert('Masukkan alamat dan sekurang-kurangnya land area atau built-up.');return}
+ const targetArea=p.category==='Land'?p.land:(p.built||p.land),basis=p.category==='Land'?'land':'built';
+ let candidates=db.map(x=>{
+  const area=basis==='land'?num(x.land):num(x.built);if(!x.price||!area||x.category!==p.category)return null;
+  const a=norm(p.address),b=norm(x.address),tokens=a.split(' ').filter(t=>t.length>2),hits=tokens.filter(t=>b.includes(t)).length;
+  const locScore=tokens.length?hits/tokens.length:0;
+  const district=norm(p.district);const districtHit=district&&b.includes(district)?0.25:0;
+  const ratio=targetArea?Math.min(area,targetArea)/Math.max(area,targetArea):0;
+  const areaScore=ratio;let tenureScore=(!p.tenure||!x.tenure||norm(p.tenure)===norm(x.tenure))?1:0.3;
+  const score=(locScore*.5+districtHit+areaScore*.25)*tenureScore;
+  return {...x,area,psf:x.price/area,score};
+ }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,10);
+ if(!candidates.length){document.getElementById('matchStatus').textContent='Tiada comparable sesuai. Import data transaksi yang sepadan dan lengkap dahulu.';document.getElementById('results').classList.add('hidden');return}
+ const usable=candidates.filter(x=>x.score>=0.12);if(!usable.length){document.getElementById('matchStatus').textContent='Ada rekod dalam database tetapi tiada padanan lokasi/saiz yang cukup relevan untuk anggaran MV.';document.getElementById('results').classList.add('hidden');return}
+ const psfs=usable.map(x=>x.psf).sort((a,b)=>a-b);const median=psfs.length%2?psfs[(psfs.length-1)/2]:(psfs[psfs.length/2-1]+psfs[psfs.length/2])/2;
+ const low=psfs[Math.floor((psfs.length-1)*.2)],high=psfs[Math.ceil((psfs.length-1)*.8)];
+ const fmt=n=>money(Math.round(n*targetArea/1000)*1000);
+ document.getElementById('lowVal').textContent=fmt(low);document.getElementById('midVal').textContent=fmt(median);document.getElementById('highVal').textContent=fmt(high);document.getElementById('compCount').textContent=usable.length;
+ document.getElementById('basisText').textContent=`Kaedah: median RM/${basis==='land'?'land':'built-up'} sqft daripada comparable yang dipadankan × ${targetArea.toLocaleString()} sqft. Julat low/high menggunakan persentil 20/80. Tiada pelarasan renovasi/lot dibuat secara automatik.`;
+ const confidence=usable.length>=5?'Sederhana — sekurang-kurangnya 5 rekod sepadan. Semak keserupaan dan keadaan hartanah.':usable.length>=3?'Terhad — hanya 3–4 rekod sepadan. Gunakan sebagai indikasi awal.':'Rendah — kurang daripada 3 rekod. Anggaran sangat awal dan perlu pengesahan lanjut.';
+ document.getElementById('confidence').textContent='CONFIDENCE: '+confidence;
+ document.getElementById('matchedRows').innerHTML=usable.map(x=>`<tr><td>${esc(x.address)}</td><td>${esc(x.date)}</td><td>${money(x.price)}</td><td>${x.land||'—'}</td><td>${x.built||'—'}</td><td>${money(x.psf)}</td><td>${(x.score*100).toFixed(0)}%</td></tr>`).join('');
+ document.getElementById('results').classList.remove('hidden');document.getElementById('matchStatus').textContent=`${usable.length} comparable dipadankan daripada ${db.length} rekod dalam database.`;
+ window.lastReport={p,usable,low:low*targetArea,mid:median*targetArea,high:high*targetArea,basis,confidence};
+};
+document.getElementById('clearProperty').onclick=()=>{document.querySelectorAll('#valuation input').forEach(x=>x.value='');document.getElementById('results').classList.add('hidden')};
+document.getElementById('printReport').onclick=()=>window.print();
+document.getElementById('copySummary').onclick=()=>{if(!window.lastReport)return;let r=window.lastReport,s=`MPIRE MARKET VALUE CHECKER\nProperty: ${r.p.address}\nCategory: ${r.p.category}\nIndicative Low MV: ${money(r.low)}\nIndicative Mid MV: ${money(r.mid)}\nIndicative High MV: ${money(r.high)}\nComparable count: ${r.usable.length}\nBasis: ${r.basis} sqft\nConfidence: ${r.confidence}\nNote: Indicative analysis based on uploaded records; not a formal valuation.`;navigator.clipboard.writeText(s).then(()=>alert('MV summary copied.')).catch(()=>alert(s))};
+function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+document.getElementById('exportJson').onclick=()=>download('mpire-mv-database.json',JSON.stringify(db,null,2),'application/json');
+document.getElementById('exportCsv').onclick=()=>{let keys=['date','address','category','price','land','built','tenure','source','sourceType'];let csv=[keys.join(','),...db.map(x=>keys.map(k=>'"'+String(x[k]??'').replace(/"/g,'""')+'"').join(','))].join('\n');download('mpire-mv-database.csv',csv,'text/csv')};
+document.getElementById('clearDb').onclick=()=>{if(confirm('AMARAN: Padam semua rekod transaksi pada peranti ini? Export backup dahulu.')){db=[];persist()}};
+document.getElementById('downloadTemplate').onclick=()=>download('mpire-sales-search-template.csv','date,address,category,price,land,built,tenure,source\n2026-01-01,"Taman Contoh, Kulim",Residential,350000,1400,1200,Freehold,NAPIC\n','text/csv');
+renderDB();
+</script>
+</body></html>
