@@ -13,7 +13,7 @@ main{max-width:1250px;margin:26px auto;padding:0 18px 60px}.tabs{display:flex;ga
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}.panel h2{font-size:17px;margin:0 0 15px}.sub{color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:5px}.field label{color:#c7ced8;font-size:12px}.field input,.field select,.field textarea{width:100%;background:#0d1118;border:1px solid #354052;color:#f5f7fa;border-radius:8px;padding:10px;font:inherit;min-width:0}.field textarea{min-height:72px;resize:vertical}
 button{border:0;border-radius:8px;padding:10px 14px;background:var(--red);color:#fff;font-weight:700;cursor:pointer}button.secondary{background:#293241;border:1px solid #414c5e}button.danger{background:#57232a}button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}.metric small{color:var(--muted);display:block}.metric strong{font-size:20px;display:block;margin-top:5px}.metric.mid{border-color:#3c936f}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}th{color:#bfc7d2;background:#1b212c;position:sticky;top:0}td input,td select{width:100%;min-width:85px;background:#0d1118;border:1px solid #354052;color:#fff;padding:6px;border-radius:5px}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:9px}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}th{color:#bfc7d2;background:#1b212c;position:sticky;top:0}td input,td select{width:100%;min-width:85px;background:#0d1118;border:1px solid #354052;color:#fff;padding:10px 34px 10px 10px;border-radius:8px;appearance:auto;-webkit-appearance:menulist;cursor:pointer}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:9px}
 .notice{background:#211d14;border:1px solid #65512b;color:#f1d9a7;padding:12px;border-radius:9px;margin:12px 0;font-size:12px}.good{color:var(--green)}.hidden{display:none!important}.status{font-size:12px;color:var(--muted);margin-top:8px}
 @media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:480px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.panel{padding:14px}.metric strong{font-size:16px}}
@@ -32,18 +32,19 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <div class="field"><label>Alamat / Location</label><input id="pAddress" placeholder="Contoh: Taman Kulim Technocity, Kulim"></div>
 <div class="field"><label>Daerah / District</label><input id="pDistrict" placeholder="Contoh: Kulim"></div>
 <div class="field"><label>Kategori hartanah</label><select id="pType"><option value="Residential">Residential</option><option value="Commercial">Commercial</option><option value="Industrial">Industrial</option><option value="Land">Land</option></select></div>
-<div class="field"><label>Jenis / Property type</label><select id="pSubtype">
-<option value="">Pilih jenis hartanah</option>
-<optgroup label="Residential">
+<div class="field"><label>Jenis / Property type</label>
+<select id="pSubtype" name="propertyType">
+<option value="">-- Pilih jenis hartanah --</option>
+<optgroup label="RESIDENTIAL">
 <option>Terrace House - 1 Storey</option><option>Terrace House - 2 Storey</option><option>Terrace House - 3 Storey</option><option>Semi-Detached House</option><option>Detached / Bungalow</option><option>Townhouse</option><option>Cluster House</option><option>Flat</option><option>Apartment</option><option>Condominium</option><option>Serviced Residence</option><option>Low Cost House</option>
 </optgroup>
-<optgroup label="Commercial">
+<optgroup label="COMMERCIAL">
 <option>Shoplot - 1 Storey</option><option>Shoplot - 2 Storey</option><option>Shoplot - 3 Storey</option><option>Office Unit</option><option>Shop Office</option><option>Retail Lot</option><option>Commercial Building</option><option>Showroom</option><option>Hotel</option>
 </optgroup>
-<optgroup label="Industrial">
+<optgroup label="INDUSTRIAL">
 <option>Detached Factory</option><option>Semi-Detached Factory</option><option>Terrace Factory</option><option>Light Industrial</option><option>Medium Industrial</option><option>Heavy Industrial</option><option>Warehouse</option>
 </optgroup>
-<optgroup label="Land">
+<optgroup label="LAND">
 <option>Residential Land</option><option>Commercial Land</option><option>Industrial Land</option><option>Agricultural Land</option><option>Development Land</option><option>Vacant Land</option>
 </optgroup>
 <option>Others / Not specified</option>
@@ -55,20 +56,10 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <div class="field"><label>Lot status</label><input id="pLot" placeholder="Lot tengah / corner / end lot"></div>
 <div class="field"><label>Bilik</label><input id="pBeds" type="number" min="0"></div>
 <div class="field"><label>Bilik air</label><input id="pBaths" type="number" min="0"></div>
-<div class="field"><label>Condition / Renovation</label><select id="pCondition">
-<option value="">Pilih keadaan hartanah</option>
-<option>Original / As-is</option>
-<option>Basic condition</option>
-<option>Good condition</option>
-<option>Well maintained</option>
-<option>Partially renovated</option>
-<option>Fully renovated</option>
-<option>Newly renovated</option>
-<option>Under renovation</option>
-<option>Needs repair</option>
-<option>Poor condition</option>
-<option>Shell & core</option>
-<option>Others / Not specified</option>
+<div class="field"><label>Condition / Renovation</label>
+<select id="pCondition" name="condition">
+<option value="">-- Pilih keadaan hartanah --</option>
+<option>Original / As-is</option><option>Basic condition</option><option>Good condition</option><option>Well maintained</option><option>Partially renovated</option><option>Fully renovated</option><option>Newly renovated</option><option>Under renovation</option><option>Needs repair</option><option>Poor condition</option><option>Shell &amp; core</option><option>Others / Not specified</option>
 </select></div>
 </div>
 <div class="actions no-print"><button id="runMV">MATCH COMPARABLE & ESTIMATE MV</button><button class="secondary" id="clearProperty">Clear</button></div>
