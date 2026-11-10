@@ -34,6 +34,19 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <div class="field"><label>Kategori hartanah</label><select id="pType"><option value="Residential">Residential</option><option value="Commercial">Commercial</option><option value="Industrial">Industrial</option><option value="Land">Land</option></select></div>
 <div class="field"><label>Jenis / Property type</label><select id="pSubtype">
 <option value="">Pilih jenis hartanah</option>
+<optgroup label="Residential">
+<option>Terrace House - 1 Storey</option><option>Terrace House - 2 Storey</option><option>Terrace House - 3 Storey</option><option>Semi-Detached House</option><option>Detached / Bungalow</option><option>Townhouse</option><option>Cluster House</option><option>Flat</option><option>Apartment</option><option>Condominium</option><option>Serviced Residence</option><option>Low Cost House</option>
+</optgroup>
+<optgroup label="Commercial">
+<option>Shoplot - 1 Storey</option><option>Shoplot - 2 Storey</option><option>Shoplot - 3 Storey</option><option>Office Unit</option><option>Shop Office</option><option>Retail Lot</option><option>Commercial Building</option><option>Showroom</option><option>Hotel</option>
+</optgroup>
+<optgroup label="Industrial">
+<option>Detached Factory</option><option>Semi-Detached Factory</option><option>Terrace Factory</option><option>Light Industrial</option><option>Medium Industrial</option><option>Heavy Industrial</option><option>Warehouse</option>
+</optgroup>
+<optgroup label="Land">
+<option>Residential Land</option><option>Commercial Land</option><option>Industrial Land</option><option>Agricultural Land</option><option>Development Land</option><option>Vacant Land</option>
+</optgroup>
+<option>Others / Not specified</option>
 </select></div>
 <div class="field"><label>Tenure</label><select id="pTenure"><option value="">Tidak dinyatakan</option><option>Freehold</option><option>Leasehold</option><option>Malay Reserve</option></select></div>
 <div class="field"><label>Land area (sqft)</label><input id="pLand" type="number" min="0" placeholder="Contoh: 1400"></div>
@@ -86,21 +99,8 @@ table{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}th,td{t
 <script>
 const KEY='mpire_mv_transactions_v1'; let db=loadDB(), pending=[];
 
-const PROPERTY_TYPES={
- Residential:['Terrace House - 1 Storey','Terrace House - 2 Storey','Terrace House - 3 Storey','Semi-Detached House','Detached / Bungalow','Townhouse','Cluster House','Flat','Apartment','Condominium','Serviced Residence','Low Cost House','Others'],
- Commercial:['Shoplot - 1 Storey','Shoplot - 2 Storey','Shoplot - 3 Storey','Office Unit','Shop Office','Retail Lot','Commercial Building','Showroom','Hotel','Others'],
- Industrial:['Detached Factory','Semi-Detached Factory','Terrace Factory','Light Industrial','Medium Industrial','Heavy Industrial','Warehouse','Industrial Land','Others'],
- Land:['Residential Land','Commercial Land','Industrial Land','Agricultural Land','Development Land','Vacant Land','Others']
-};
-function refreshPropertyTypes(keepValue=true){
- const category=document.getElementById('pType').value;
- const select=document.getElementById('pSubtype');
- const previous=keepValue?select.value:'';
- select.innerHTML='<option value="">Pilih jenis hartanah</option>'+PROPERTY_TYPES[category].map(v=>`<option value="${v}">${v}</option>`).join('');
- if(previous && [...select.options].some(o=>o.value===previous)) select.value=previous;
-}
-document.getElementById('pType').addEventListener('change',()=>refreshPropertyTypes(false));
-refreshPropertyTypes();
+// Property type options are embedded in HTML so they remain available even if scripts fail.
+
 
 function loadDB(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(db));renderDB()}
